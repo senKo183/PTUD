@@ -11,13 +11,13 @@
             display: flex;
             justify-content: flex-end; /* Moves form to right */
             align-items: center; /* Centers vertically */
-            background-color: #f8f9fa; /* Light gray background */
+            background: url('https://th.bing.com/th/id/R.c8af6e458bda691fd1dbc873590d49a7?rik=EGwMW5QcqbjB8w&pid=ImgRaw&r=0') no-repeat center center/cover;
             padding-right: 10%; /* Adjust right positioning */
         }
         .login-container {
             width: 350px;
             padding: 20px;
-            background: white;
+            background: rgba(255, 255, 255, 0.9); /* Slightly transparent white */
             border-radius: 8px;
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
         }
@@ -27,18 +27,47 @@
 
     <div class="login-container">
         <h4 class="text-center mb-4">Login</h4>
-        <form>
+        <form method="POST" action="">
+            {{ form.hidden_tag() }}
             <div class="mb-3">
-                <label for="username" class="form-label">Username</label>
-                <input type="text" class="form-control" id="username">
+                {{ form.username.label(class="form-label") }}
+                {% if form.username.errors or not form.username.data %}
+                    {{ form.username(class="form-control is-invalid") }}
+                    <div class="invalid-feedback">
+                        {% for error in form.username.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                        {% if not form.username.data %}
+                            <span>This field is required.</span>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    {{ form.username(class="form-control") }}
+                {% endif %}
             </div>
             <div class="mb-3">
-                <label for="exampleInputPassword1" class="form-label">Password</label>
-                <input type="password" class="form-control" id="exampleInputPassword1">
+                {{ form.password.label(class="form-label") }}
+                {% if form.password.errors or not form.password.data %}
+                    {{ form.password(class="form-control is-invalid") }}
+                    <div class="invalid-feedback">
+                        {% for error in form.password.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                        {% if not form.password.data %}
+                            <span>This field is required.</span>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    {{ form.password(class="form-control") }}
+                {% endif %}
             </div>
             <div class="mb-3 form-check">
-                <input type="checkbox" class="form-check-input" id="exampleCheck1">
-                <label class="form-check-label" for="exampleCheck1">Remember me</label>
+                {{ form.remember(class="form-check-input") }}
+                {{ form.remember.label(class="form-check-label") }}
+            </div>
+            <div class="mb-3 d-flex justify-content-between">
+                <a href="#" class="btn btn-outline-danger btn-sm">Reset Password</a>
+                <a href="#" class="btn btn-outline-secondary btn-sm">Login</a>
             </div>
             <button type="submit" class="btn btn-primary w-100">Submit</button>
         </form>
