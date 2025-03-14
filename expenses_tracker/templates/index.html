@@ -1,7 +1,334 @@
 {% extends "layout.html" %}
 
+{% block title %}Dashboard - Expense Tracker{% endblock %}
+
 {% block content %}
+<div class="container">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0"><i class="fas fa-chart-line me-2"></i>Tổng quan chi tiêu</h1>
+  </div>
 
+  <!-- Date Range Filter -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row align-items-center">
+        <div class="col-md-2">
+          <label for="dateRange" class="form-label fw-bold">Date Range:</label>
+        </div>
+        <div class="col-md-4">
+          <select class="form-select" id="dateRange">
+            <option value="7">Last 7 days</option>
+            <option value="30" selected>Last 30 days</option>
+            <option value="90">Last 3 months</option>
+            <option value="180">Last 6 months</option>
+            <option value="365">Last year</option>
+            <option value="custom">Custom range</option>
+          </select>
+        </div>
+        <div class="col-md-6" id="customDateRange" style="display: none;">
+          <div class="row">
+            <div class="col-md-5">
+              <input type="date" class="form-control" id="startDate">
+            </div>
+            <div class="col-md-2 text-center">to</div>
+            <div class="col-md-5">
+              <input type="date" class="form-control" id="endDate">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
+  <!-- Stats Cards -->
+  <div class="row mb-4">
+    <div class="col-md-4">
+      <div class="card stat-card bg-primary text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="card-title mb-0">Tổng số dư</h6>
+              <h3 class="mt-2 mb-0">{{ "{:,.2f}".format(total_balance) }}đ</h3>
+            </div>
+            <div class="stat-icon">
+              <i class="fas fa-dollar-sign"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card stat-card bg-success text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="card-title mb-0">Thu nhập</h6>
+              <h3 class="mt-2 mb-0">{{ "{:,.2f}".format(total_income) }}đ</h3>
+            </div>
+            <div class="stat-icon">
+              <i class="fas fa-arrow-up"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card stat-card bg-danger text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="card-title mb-0">Chi tiêu</h6>
+              <h3 class="mt-2 mb-0">{{ "{:,.2f}".format(total_expense) }}đ</h3>
+            </div>
+            <div class="stat-icon">
+              <i class="fas fa-arrow-down"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-{% endblock content %}
+  <!-- Charts Row -->
+  <div class="row mb-4">
+    <!-- Monthly Overview -->
+    <div class="col-md-8">
+      <div class="card h-100">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Tổng quan theo tháng</h5>
+        </div>
+        <div class="card-body">
+          <div id="monthlyTrendChart" style="height: 350px;"></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Category Breakdown -->
+    <div class="col-md-4">
+      <div class="card h-100">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Phân loại chi tiêu</h5>
+        </div>
+        <div class="card-body">
+          <div id="categoryPieChart" style="height: 350px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Second Row of Charts -->
+  <div class="row mb-4">
+    <!-- Daily Spending -->
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-calendar-day me-2"></i>Chi tiêu hàng ngày</h5>
+        </div>
+        <div class="card-body">
+          <div id="dailySpendingChart" style="height: 300px;"></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Income vs Expense -->
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-balance-scale me-2"></i>Thu nhập & Chi tiêu</h5>
+        </div>
+        <div class="card-body">
+          <div id="incomeVsExpenseChart" style="height: 300px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Transactions -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5 class="mb-0"><i class="fas fa-history me-2"></i>Giao dịch gần đây</h5>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Ngày</th>
+              <th>Danh mục</th>
+              <th>Mô tả</th>
+              <th>Số tiền</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for transaction in recent_transactions %}
+            <tr>
+              <td>{{ transaction.date }}</td>
+              <td>
+                <span class="badge {% if transaction.type == 'expense' %}bg-danger{% else %}bg-success{% endif %}">
+                  {{ transaction.category_name }}
+                </span>
+              </td>
+              <td>{{ transaction.description }}</td>
+              <td class="{{ transaction.type }}">
+                {% if transaction.type == 'expense' %}-{% else %}+{% endif %}
+                {{ "{:,.2f}".format(transaction.amount) }}đ
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+// Xử lý hiển thị custom date range
+document.addEventListener('DOMContentLoaded', function() {
+  // Show/hide custom date range based on selection
+  document.getElementById('dateRange').addEventListener('change', function() {
+    const customDateRange = document.getElementById('customDateRange');
+    if (this.value === 'custom') {
+      customDateRange.style.display = 'block';
+    } else {
+      customDateRange.style.display = 'none';
+    }
+  });
+
+  // Monthly Trend Chart
+  const monthlyTrendChart = document.getElementById('monthlyTrendChart');
+  if (monthlyTrendChart) {
+    const monthlyData = {{ monthly_trend | tojson }};
+    
+    Plotly.newPlot(monthlyTrendChart, [
+      {
+        x: monthlyData.months,
+        y: monthlyData.incomes,
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: 'Thu nhập',
+        line: { color: '#38b000', width: 3 },
+        marker: { color: '#38b000', size: 8 }
+      },
+      {
+        x: monthlyData.months,
+        y: monthlyData.expenses,
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: 'Chi tiêu',
+        line: { color: '#ff006e', width: 3 },
+        marker: { color: '#ff006e', size: 8 }
+      }
+    ], {
+      margin: { t: 10, r: 10, b: 40, l: 40 },
+      legend: { orientation: 'h', y: 1.1 },
+      xaxis: { title: 'Tháng' },
+      yaxis: { title: 'Số tiền (VNĐ)' },
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      font: { family: 'Arial, sans-serif' }
+    });
+  }
+
+  // Category Pie Chart
+  const categoryPieChart = document.getElementById('categoryPieChart');
+  if (categoryPieChart) {
+    const expenseData = {{ expense_data | tojson }};
+    
+    Plotly.newPlot(categoryPieChart, [{
+      labels: expenseData.categories,
+      values: expenseData.amounts,
+      type: 'pie',
+      textinfo: 'percent',
+      hoverinfo: 'label+value+percent',
+      hole: 0.4
+    }], {
+      margin: { t: 10, r: 10, b: 10, l: 10 },
+      annotations: [{
+        font: { size: 14 },
+        showarrow: false,
+        text: 'Chi tiêu',
+        x: 0.5,
+        y: 0.5
+      }],
+      showlegend: true,
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      paper_bgcolor: 'rgba(0,0,0,0)'
+    });
+  }
+
+  // Daily Spending Chart
+  const dailySpendingChart = document.getElementById('dailySpendingChart');
+  if (dailySpendingChart) {
+    const dailyData = {{ daily_spending | tojson }};
+    
+    Plotly.newPlot(dailySpendingChart, [{
+      x: dailyData.dates,
+      y: dailyData.amounts,
+      type: 'bar',
+      marker: { color: '#3a86ff' }
+    }], {
+      margin: { t: 10, r: 10, b: 40, l: 40 },
+      xaxis: { title: 'Ngày' },
+      yaxis: { title: 'Số tiền (VNĐ)' },
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      paper_bgcolor: 'rgba(0,0,0,0)'
+    });
+  }
+
+  // Income vs Expense Chart
+  const incomeVsExpenseChart = document.getElementById('incomeVsExpenseChart');
+  if (incomeVsExpenseChart) {
+    const monthlyData = {{ monthly_trend | tojson }};
+    
+    Plotly.newPlot(incomeVsExpenseChart, [
+      {
+        x: monthlyData.months,
+        y: monthlyData.incomes,
+        type: 'bar',
+        name: 'Thu nhập',
+        marker: { color: '#38b000' }
+      },
+      {
+        x: monthlyData.months,
+        y: monthlyData.expenses,
+        type: 'bar',
+        name: 'Chi tiêu',
+        marker: { color: '#ff006e' }
+      }
+    ], {
+      margin: { t: 10, r: 10, b: 40, l: 40 },
+      barmode: 'group',
+      legend: { orientation: 'h', y: 1.1 },
+      xaxis: { title: 'Tháng' },
+      yaxis: { title: 'Số tiền (VNĐ)' },
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      paper_bgcolor: 'rgba(0,0,0,0)'
+    });
+  }
+
+  // Xử lý responsive cho các biểu đồ
+  window.addEventListener('resize', function() {
+    const charts = [
+      'monthlyTrendChart', 
+      'categoryPieChart', 
+      'dailySpendingChart', 
+      'incomeVsExpenseChart'
+    ];
+    
+    charts.forEach(chartId => {
+      const chart = document.getElementById(chartId);
+      if (chart) {
+        Plotly.relayout(chartId, {
+          'width': chart.offsetWidth,
+          'height': chart.offsetHeight
+        });
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

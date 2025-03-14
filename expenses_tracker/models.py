@@ -59,6 +59,8 @@ class Income(db.Model):
     description = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=func.now(), server_default=func.now())
 
+    category = db.relationship('Category', backref='incomes', lazy=True)
+
     def __repr__(self):
         return f"Income('{self.amount}', '{self.date}')"
 
